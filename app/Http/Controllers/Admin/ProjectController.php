@@ -8,6 +8,8 @@ use App\Models\Admin\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Admin\Type;
+use App\Models\Admin\Technology;
+
 class ProjectController extends Controller
 {
     /**
@@ -29,7 +31,8 @@ class ProjectController extends Controller
     public function create()
     {
         $types = Type::all();
-        return view ('admin.project.create', compact('types'));
+        $technologies = Technology::all();
+        return view ('admin.project.create', compact('types', 'technologies'));
     }
 
     /**
@@ -45,7 +48,8 @@ class ProjectController extends Controller
                 'name' => 'required|unique:projects',
                 'description' => 'required',
                 'img' => 'nullable|image',
-                'type_id' => 'nullable|exists:types,id'
+                'type_id' => 'nullable|exists:types,id',
+                'technologies' => 'exists:technologies,id'
             ],
             [
                 'name.required' => 'Il campo name deve essere compilato',
@@ -75,6 +79,10 @@ class ProjectController extends Controller
         
         $new_project->save();
 
+        if($request->has('technologies')){
+            $new_project->technologies()->attach($request->technologies);
+        }
+
         return redirect()->route('admin.project.index')->with('success', "Project $new_project->name creato");;
 
     }
@@ -99,7 +107,8 @@ class ProjectController extends Controller
     public function edit(Project $project)
     {
         $types = Type::all();
-        return view('admin.project.edit', compact( 'project' , 'types' ));
+        $technologies = Technology::all();
+        return view('admin.project.edit', compact( 'project' , 'types' , 'technologies'));
     }
 
     /**
@@ -117,7 +126,8 @@ class ProjectController extends Controller
                 'name' => 'required',
                 'description' => 'required',
                 'img' => 'nullable|image',
-                'type_id' => 'nullable|exists:types,id'
+                'type_id' => 'nullable|exists:types,id',
+                'technologies' => 'exists:technologies,id'
             ],
             [
                 'name.required' => 'Il campo name deve essere compilato',
@@ -143,6 +153,10 @@ class ProjectController extends Controller
 
         $project->update($form_data);
 
+        if($request->has('technologies')){
+            $project->technologies()->sync($request->technologies);
+        }
+
         return redirect()->route('admin.project.index')->with('success', "Project $project->name modificato");
     }
 
@@ -155,6 +169,7 @@ class ProjectController extends Controller
     public function destroy(Project $project)
     {
         $project->delete();
+        $project->technologies()->sync([]);
         return redirect()->route('admin.project.index');
     }
 }
